@@ -1,4 +1,3 @@
-// src/pages/Recherche.jsx
 import React, { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import Navbar from '../components/Navbar'
@@ -14,6 +13,8 @@ export default function Recherche() {
   const [resultats, setResultats] = useState([])
   const [filtreCategorie, setFiltreCategorie] = useState('toutes')
   const [filtreRegion, setFiltreRegion] = useState('toutes')
+  const [prixMin, setPrixMin] = useState('')
+  const [prixMax, setPrixMax] = useState('')
   const [showFilters, setShowFilters] = useState(false)
 
   // Extraire toutes les catégories et régions uniques
@@ -36,8 +37,9 @@ export default function Recherche() {
         const artisanMatch = mots.some(mot => produit.artisan.toLowerCase().includes(mot))
         const regionMatch = mots.some(mot => produit.region.toLowerCase().includes(mot))
         const catMatch = mots.some(mot => produit.categorie.toLowerCase().includes(mot))
+        const codeMatch = mots.some(mot => produit.id.toLowerCase().includes(mot))
         
-        return nomMatch || descMatch || artisanMatch || regionMatch || catMatch
+        return nomMatch || descMatch || artisanMatch || regionMatch || catMatch || codeMatch
       })
 
       // Appliquer les filtres
@@ -49,11 +51,27 @@ export default function Recherche() {
         filtered = filtered.filter(p => p.region === filtreRegion)
       }
 
+      if (prixMin) {
+        filtered = filtered.filter(p => p.prix >= parseFloat(prixMin))
+      }
+
+      if (prixMax) {
+        filtered = filtered.filter(p => p.prix <= parseFloat(prixMax))
+      }
+
       setResultats(filtered)
     }
 
     rechercher()
-  }, [query, filtreCategorie, filtreRegion])
+  }, [query, filtreCategorie, filtreRegion, prixMin, prixMax])
+
+  // Réinitialiser les filtres
+  const resetFilters = () => {
+    setFiltreCategorie('toutes')
+    setFiltreRegion('toutes')
+    setPrixMin('')
+    setPrixMax('')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -90,7 +108,7 @@ export default function Recherche() {
         {showFilters && (
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 animate-fadeIn">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">Filtrer par</h2>
+              <h2 className="text-lg font-semibold text-gray-800">Filtrer les résultats</h2>
               <button 
                 onClick={() => setShowFilters(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -99,7 +117,7 @@ export default function Recherche() {
               </button>
             </div>
             
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Catégorie
@@ -135,15 +153,44 @@ export default function Recherche() {
                   ))}
                 </select>
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prix min (USD)
+                </label>
+                <input
+                  type="number"
+                  value={prixMin}
+                  onChange={(e) => setPrixMin(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg 
+                           focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Prix max (USD)
+                </label>
+                <input
+                  type="number"
+                  value={prixMax}
+                  onChange={(e) => setPrixMax(e.target.value)}
+                  placeholder="100"
+                  min="0"
+                  step="0.01"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg 
+                           focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
             </div>
             
-            {(filtreCategorie !== 'toutes' || filtreRegion !== 'toutes') && (
+            {(filtreCategorie !== 'toutes' || filtreRegion !== 'toutes' || prixMin || prixMax) && (
               <div className="mt-4 flex gap-2">
                 <button 
-                  onClick={() => {
-                    setFiltreCategorie('toutes')
-                    setFiltreRegion('toutes')
-                  }}
+                  onClick={resetFilters}
                   className="text-sm text-amber-600 hover:text-amber-700"
                 >
                   Réinitialiser les filtres
@@ -161,7 +208,7 @@ export default function Recherche() {
               Entrez un mot-clé
             </h2>
             <p className="text-gray-500">
-              Recherchez un produit, un artisan ou une catégorie
+              Recherchez par nom de produit (ex: MACR-DISC), artisan, catégorie ou région
             </p>
           </div>
         ) : resultats.length === 0 ? (
@@ -177,9 +224,9 @@ export default function Recherche() {
               Suggestions :
             </p>
             <ul className="text-gray-500 mt-2 space-y-1">
-              <li>• Vérifiez l'orthographe</li>
-              <li>• Utilisez des mots plus généraux</li>
-              <li>• Essayez une autre catégorie</li>
+              <li>• Vérifiez l'orthographe (ex: MACR au lieu de MACRAMÉ)</li>
+              <li>• Utilisez le code produit (ex: FSH-LOVA)</li>
+              <li>• Essayez une recherche plus générale (sac, panier, etc.)</li>
             </ul>
             <a 
               href="/produits"
